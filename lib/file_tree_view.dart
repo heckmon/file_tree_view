@@ -4,6 +4,7 @@ import 'package:file_tree_view/style.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 late bool isParentOpen;
 String? currentDir;
@@ -37,8 +38,18 @@ class DirectoryTreeViewer extends StatelessWidget {
   /// Custom styling for text editing field.
   final EditingFieldStyle? editingFieldStyle;
 
-  /// Callback function when a file is tapped. Accepts a [File] as parameter.
-  final void Function(File)? onFileTap;
+  /// Callback function when a file is tapped. Accepts a [File] and [TapDownDetails] as parameters.
+  final void Function(File, TapDownDetails)? onFileTap;
+
+  /// Callback function when a file is right-clicked.
+  final void Function(File, TapDownDetails)? onFileSecondaryTap;
+
+  /// Callback function when a directory is tapped.
+  final void Function(Directory, TapDownDetails)? onDirTap;
+
+  /// Callback function when a directory is right-clicked.
+  final void Function(Directory, TapDownDetails)? onDirSecondaryTap;
+
 
   ///Additional folder action widgets
   final List<Widget>? folderActions;
@@ -52,19 +63,22 @@ class DirectoryTreeViewer extends StatelessWidget {
   /// Constructs a [DirectoryTreeViewer] with the given properties.
   const DirectoryTreeViewer(
       {super.key,
-      required this.rootPath,
-      this.onFileTap,
-      this.folderActions,
-      this.fileActions,
-      this.folderStyle,
-      this.fileStyle,
-      this.isUnfoldedFirst = true,
-      this.editingFieldStyle,
-      this.enableCreateFileOption = false,
-      this.enableCreateFolderOption = false,
-      this.enableDeleteFileOption = false,
-      this.enableDeleteFolderOption = false,
-      this.fileIconBuilder});
+        required this.rootPath,
+        this.onFileTap,
+        this.onFileSecondaryTap,
+        this.onDirTap,
+        this.onDirSecondaryTap,
+        this.folderActions,
+        this.fileActions,
+        this.folderStyle,
+        this.fileStyle,
+        this.isUnfoldedFirst = true,
+        this.editingFieldStyle,
+        this.enableCreateFileOption = false,
+        this.enableCreateFolderOption = false,
+        this.enableDeleteFileOption = false,
+        this.enableDeleteFolderOption = false,
+        this.fileIconBuilder});
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +103,9 @@ class DirectoryTreeViewer extends StatelessWidget {
         fileActions: fileActions,
         rootPath: rootPath,
         onFileTap: onFileTap,
+        onFileSecondaryTap: onFileSecondaryTap,
+        onDirTap: onDirTap,
+        onDirSecondaryTap: onDirSecondaryTap,
         fileIconBuilder: fileIconBuilder,
       ),
     );
@@ -178,7 +195,10 @@ class FoldableDirectoryTree extends StatefulWidget {
   final FolderStyle? folderStyle;
   final FileStyle? fileStyle;
   final EditingFieldStyle? editingFieldStyle;
-  final void Function(File)? onFileTap;
+  final void Function(File, TapDownDetails)? onFileTap;
+  final void Function(File, TapDownDetails)? onFileSecondaryTap;
+  final void Function(Directory, TapDownDetails)? onDirTap;
+  final void Function(Directory, TapDownDetails)? onDirSecondaryTap;
   final List<Widget>? folderActions;
   final List<Widget>? fileActions;
   final Widget Function(String fileExtension)? fileIconBuilder;
@@ -187,6 +207,9 @@ class FoldableDirectoryTree extends StatefulWidget {
     super.key,
     required this.rootPath,
     this.onFileTap,
+    this.onFileSecondaryTap,
+    this.onDirTap,
+    this.onDirSecondaryTap,
     this.folderStyle,
     this.fileStyle,
     this.folderActions,
@@ -217,7 +240,17 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
+        GestureDetector(
+          onTapDown: (details) {
+            if (widget.onDirTap != null) {
+              widget.onDirTap!(directory, details);
+            }
+          },
+          onSecondaryTapDown: (details) {
+            if (widget.onDirSecondaryTap != null) {
+              widget.onDirSecondaryTap!(directory, details);
+            }
+          },
           onTap: () {
             stateNotifier.toggleFolder(directory.path, widget.rootPath);
             currentDir = directory.path;
@@ -227,57 +260,60 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
               });
             }
           },
-          child: Row(
-            children: [
-              directory.path != widget.rootPath
-                  ? (stateNotifier.isUnfolded(directory.path, widget.rootPath)
-                      ? widget.folderStyle?.folderOpenedicon ??
-                          FolderStyle().folderOpenedicon
-                      : widget.folderStyle?.folderClosedicon ??
-                          FolderStyle().folderClosedicon)
-                  : isParentOpen
-                      ? widget.folderStyle?.rootFolderOpenedIcon ??
-                          FolderStyle().rootFolderOpenedIcon
-                      : widget.folderStyle?.rootFolderClosedIcon ??
-                          FolderStyle().rootFolderClosedIcon,
-              const SizedBox(width: 8),
-              Text(
-                path.basename(directory.path),
-                style: widget.folderStyle?.folderNameStyle ??
-                    FolderStyle().folderNameStyle,
-              ),
-              SizedBox(
-                  width: widget.folderStyle?.itemGap ?? FolderStyle().itemGap),
-              if (widget.enableCreateFileOption &&
-                  stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
-                  currentDir == directory.path)
-                IconButton(
-                  onPressed: () =>
-                      stateNotifier.startCreating(directory.path, false),
-                  icon: widget.folderStyle?.iconForCreateFile ??
-                      FolderStyle().iconForCreateFile,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              children: [
+                directory.path != widget.rootPath
+                    ? (stateNotifier.isUnfolded(directory.path, widget.rootPath)
+                    ? widget.folderStyle?.folderOpenedicon ??
+                    FolderStyle().folderOpenedicon
+                    : widget.folderStyle?.folderClosedicon ??
+                    FolderStyle().folderClosedicon)
+                    : isParentOpen
+                    ? widget.folderStyle?.rootFolderOpenedIcon ??
+                    FolderStyle().rootFolderOpenedIcon
+                    : widget.folderStyle?.rootFolderClosedIcon ??
+                    FolderStyle().rootFolderClosedIcon,
+                const SizedBox(width: 8),
+                Text(
+                  path.basename(directory.path),
+                  style: widget.folderStyle?.folderNameStyle ??
+                      FolderStyle().folderNameStyle,
                 ),
-              if (widget.enableCreateFolderOption &&
-                  stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
-                  currentDir == directory.path)
-                IconButton(
-                  onPressed: () =>
-                      stateNotifier.startCreating(directory.path, true),
-                  icon: widget.folderStyle?.iconForCreateFolder ??
-                      FolderStyle().iconForCreateFolder,
-                ),
-              if (widget.enableDeleteFolderOption &&
-                  stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
-                  currentDir == directory.path)
-                IconButton(
-                  onPressed: () {
-                    Directory(directory.path).delete(recursive: true);
-                    setState(() {});
-                  },
-                  icon: const Icon(Icons.delete),
-                ),
-              ...widget.folderActions ?? [],
-            ],
+                SizedBox(
+                    width: widget.folderStyle?.itemGap ?? FolderStyle().itemGap),
+                if (widget.enableCreateFileOption &&
+                    stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
+                    currentDir == directory.path)
+                  IconButton(
+                    onPressed: () =>
+                        stateNotifier.startCreating(directory.path, false),
+                    icon: widget.folderStyle?.iconForCreateFile ??
+                        FolderStyle().iconForCreateFile,
+                  ),
+                if (widget.enableCreateFolderOption &&
+                    stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
+                    currentDir == directory.path)
+                  IconButton(
+                    onPressed: () =>
+                        stateNotifier.startCreating(directory.path, true),
+                    icon: widget.folderStyle?.iconForCreateFolder ??
+                        FolderStyle().iconForCreateFolder,
+                  ),
+                if (widget.enableDeleteFolderOption &&
+                    stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
+                    currentDir == directory.path)
+                  IconButton(
+                    onPressed: () {
+                      Directory(directory.path).delete(recursive: true);
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.delete),
+                  ),
+                ...widget.folderActions ?? [],
+              ],
+            ),
           ),
         ),
         if (stateNotifier.isUnfolded(directory.path, widget.rootPath))
@@ -311,9 +347,9 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
       children: [
         stateNotifier.isFolderCreation
             ? widget.editingFieldStyle?.folderIcon ??
-                EditingFieldStyle().folderIcon
+            EditingFieldStyle().folderIcon
             : widget.editingFieldStyle?.fileIcon ??
-                EditingFieldStyle().fileIcon,
+            EditingFieldStyle().fileIcon,
         const SizedBox(width: 8),
         Expanded(
           child: SizedBox(
@@ -376,30 +412,38 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
     final customIcon = widget.fileIconBuilder != null
         ? widget.fileIconBuilder!(extension)
         : widget.fileStyle?.fileIcon ?? FileStyle().fileIcon;
-    return InkWell(
-      onTap: () {
+    return GestureDetector(
+      onTapDown: (details) {
         if (widget.onFileTap != null) {
-          widget.onFileTap!(file);
+          widget.onFileTap!(file, details);
         }
       },
-      child: Row(
-        children: [
-          customIcon,
-          const SizedBox(width: 8),
-          Text(
-            path.basename(file.path),
-            style: widget.fileStyle?.fileNameStyle ?? FileStyle().fileNameStyle,
-          ),
-          ...widget.fileActions ?? [],
-          if (widget.enableDeleteFileOption)
-            IconButton(
-                onPressed: () {
-                  file.deleteSync(recursive: true);
-                  setState(() {});
-                },
-                icon: widget.fileStyle?.iconForDeleteFile ??
-                    FileStyle().iconForDeleteFile)
-        ],
+      onSecondaryTapDown: (details) {
+        if (widget.onFileSecondaryTap != null) {
+          widget.onFileSecondaryTap!(file, details);
+        }
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
+          children: [
+            customIcon,
+            const SizedBox(width: 8),
+            Text(
+              path.basename(file.path),
+              style: widget.fileStyle?.fileNameStyle ?? FileStyle().fileNameStyle,
+            ),
+            ...widget.fileActions ?? [],
+            if (widget.enableDeleteFileOption)
+              IconButton(
+                  onPressed: () {
+                    file.deleteSync(recursive: true);
+                    setState(() {});
+                  },
+                  icon: widget.fileStyle?.iconForDeleteFile ??
+                      FileStyle().iconForDeleteFile)
+          ],
+        ),
       ),
     );
   }
