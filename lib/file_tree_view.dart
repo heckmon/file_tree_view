@@ -50,7 +50,6 @@ class DirectoryTreeViewer extends StatelessWidget {
   /// Callback function when a directory is right-clicked.
   final void Function(Directory, TapDownDetails)? onDirSecondaryTap;
 
-
   ///Additional folder action widgets
   final List<Widget>? folderActions;
 
@@ -61,32 +60,31 @@ class DirectoryTreeViewer extends StatelessWidget {
   final Widget Function(String fileExtension)? fileIconBuilder;
 
   /// Constructs a [DirectoryTreeViewer] with the given properties.
-  const DirectoryTreeViewer(
-      {super.key,
-        required this.rootPath,
-        this.onFileTap,
-        this.onFileSecondaryTap,
-        this.onDirTap,
-        this.onDirSecondaryTap,
-        this.folderActions,
-        this.fileActions,
-        this.folderStyle,
-        this.fileStyle,
-        this.isUnfoldedFirst = true,
-        this.editingFieldStyle,
-        this.enableCreateFileOption = false,
-        this.enableCreateFolderOption = false,
-        this.enableDeleteFileOption = false,
-        this.enableDeleteFolderOption = false,
-        this.fileIconBuilder});
+  const DirectoryTreeViewer({
+    super.key,
+    required this.rootPath,
+    this.onFileTap,
+    this.onFileSecondaryTap,
+    this.onDirTap,
+    this.onDirSecondaryTap,
+    this.folderActions,
+    this.fileActions,
+    this.folderStyle,
+    this.fileStyle,
+    this.isUnfoldedFirst = true,
+    this.editingFieldStyle,
+    this.enableCreateFileOption = false,
+    this.enableCreateFolderOption = false,
+    this.enableDeleteFileOption = false,
+    this.enableDeleteFolderOption = false,
+    this.fileIconBuilder,
+  });
 
   @override
   Widget build(BuildContext context) {
     /// Check if the platform is Web or WASM, and display a message if it is.
     if (kIsWasm || kIsWeb) {
-      return const AlertDialog(
-        title: Text("Web platform is not supported"),
-      );
+      return const AlertDialog(title: Text("Web platform is not supported"));
     }
     isParentOpen = isUnfoldedFirst;
     return DirectoryTreeStateProvider(
@@ -229,7 +227,9 @@ class FoldableDirectoryTree extends StatefulWidget {
 /// Recursively builds the directory tree for a given [directory] using [stateNotifier] to manage folder states.
 class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
   Widget _buildDirectoryTree(
-      Directory directory, DirectoryTreeStateNotifier stateNotifier) {
+    Directory directory,
+    DirectoryTreeStateNotifier stateNotifier,
+  ) {
     final entries = directory.listSync();
     entries.sort((a, b) {
       if (a is Directory && b is File) return -1;
@@ -266,30 +266,33 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
               children: [
                 directory.path != widget.rootPath
                     ? (stateNotifier.isUnfolded(directory.path, widget.rootPath)
-                    ? widget.folderStyle?.folderOpenedicon ??
-                    FolderStyle().folderOpenedicon
-                    : widget.folderStyle?.folderClosedicon ??
-                    FolderStyle().folderClosedicon)
+                          ? widget.folderStyle?.folderOpenedicon ??
+                                FolderStyle().folderOpenedicon
+                          : widget.folderStyle?.folderClosedicon ??
+                                FolderStyle().folderClosedicon)
                     : isParentOpen
                     ? widget.folderStyle?.rootFolderOpenedIcon ??
-                    FolderStyle().rootFolderOpenedIcon
+                          FolderStyle().rootFolderOpenedIcon
                     : widget.folderStyle?.rootFolderClosedIcon ??
-                    FolderStyle().rootFolderClosedIcon,
+                          FolderStyle().rootFolderClosedIcon,
                 const SizedBox(width: 8),
                 Text(
                   path.basename(directory.path),
-                  style: widget.folderStyle?.folderNameStyle ??
+                  style:
+                      widget.folderStyle?.folderNameStyle ??
                       FolderStyle().folderNameStyle,
                 ),
                 SizedBox(
-                    width: widget.folderStyle?.itemGap ?? FolderStyle().itemGap),
+                  width: widget.folderStyle?.itemGap ?? FolderStyle().itemGap,
+                ),
                 if (widget.enableCreateFileOption &&
                     stateNotifier.isUnfolded(directory.path, widget.rootPath) &&
                     currentDir == directory.path)
                   IconButton(
                     onPressed: () =>
                         stateNotifier.startCreating(directory.path, false),
-                    icon: widget.folderStyle?.iconForCreateFile ??
+                    icon:
+                        widget.folderStyle?.iconForCreateFile ??
                         FolderStyle().iconForCreateFile,
                   ),
                 if (widget.enableCreateFolderOption &&
@@ -298,7 +301,8 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
                   IconButton(
                     onPressed: () =>
                         stateNotifier.startCreating(directory.path, true),
-                    icon: widget.folderStyle?.iconForCreateFolder ??
+                    icon:
+                        widget.folderStyle?.iconForCreateFolder ??
                         FolderStyle().iconForCreateFolder,
                   ),
                 if (widget.enableDeleteFolderOption &&
@@ -325,7 +329,9 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
                 ...entries.map((entry) {
                   if (entry is Directory) {
                     return _buildDirectoryTree(
-                        Directory(entry.path), stateNotifier);
+                      Directory(entry.path),
+                      stateNotifier,
+                    );
                   } else if (entry is File) {
                     return _buildFileItem(entry);
                   }
@@ -341,15 +347,17 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
   }
 
   Widget _buildNewEntryField(
-      Directory parent, DirectoryTreeStateNotifier stateNotifier) {
+    Directory parent,
+    DirectoryTreeStateNotifier stateNotifier,
+  ) {
     TextEditingController controller = TextEditingController();
     return Row(
       children: [
         stateNotifier.isFolderCreation
             ? widget.editingFieldStyle?.folderIcon ??
-            EditingFieldStyle().folderIcon
+                  EditingFieldStyle().folderIcon
             : widget.editingFieldStyle?.fileIcon ??
-            EditingFieldStyle().fileIcon,
+                  EditingFieldStyle().fileIcon,
         const SizedBox(width: 8),
         Expanded(
           child: SizedBox(
@@ -364,7 +372,8 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
               cursorColor: widget.editingFieldStyle?.cursorColor,
               controller: controller,
               autofocus: true,
-              decoration: widget.editingFieldStyle?.textfieldDecoration ??
+              decoration:
+                  widget.editingFieldStyle?.textfieldDecoration ??
                   EditingFieldStyle().textfieldDecoration,
               onSubmitted: (value) {
                 if (value.trim().isNotEmpty) {
@@ -381,7 +390,8 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
           ),
         ),
         IconButton(
-          icon: widget.editingFieldStyle?.doneIcon ??
+          icon:
+              widget.editingFieldStyle?.doneIcon ??
               EditingFieldStyle().doneIcon,
           onPressed: () {
             if (controller.text.trim().isNotEmpty) {
@@ -396,7 +406,8 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
           },
         ),
         IconButton(
-          icon: widget.editingFieldStyle?.cancelIcon ??
+          icon:
+              widget.editingFieldStyle?.cancelIcon ??
               EditingFieldStyle().cancelIcon,
           onPressed: () {
             stateNotifier.stopCreating();
@@ -431,17 +442,20 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
             const SizedBox(width: 8),
             Text(
               path.basename(file.path),
-              style: widget.fileStyle?.fileNameStyle ?? FileStyle().fileNameStyle,
+              style:
+                  widget.fileStyle?.fileNameStyle ?? FileStyle().fileNameStyle,
             ),
             ...widget.fileActions ?? [],
             if (widget.enableDeleteFileOption)
               IconButton(
-                  onPressed: () {
-                    file.deleteSync(recursive: true);
-                    setState(() {});
-                  },
-                  icon: widget.fileStyle?.iconForDeleteFile ??
-                      FileStyle().iconForDeleteFile)
+                onPressed: () {
+                  file.deleteSync(recursive: true);
+                  setState(() {});
+                },
+                icon:
+                    widget.fileStyle?.iconForDeleteFile ??
+                    FileStyle().iconForDeleteFile,
+              ),
           ],
         ),
       ),
@@ -455,9 +469,7 @@ class _FoldableDirectoryTreeState extends State<FoldableDirectoryTree> {
     final rootDirectory = Directory(widget.rootPath);
 
     if (!rootDirectory.existsSync()) {
-      return const Center(
-        child: Text('Directory does not exist'),
-      );
+      return const Center(child: Text('Directory does not exist'));
     }
 
     return SingleChildScrollView(
