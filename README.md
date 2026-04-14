@@ -1,3 +1,5 @@
+## No longer maintained
+
 # File Tree View Flutter Package
 
 A Flutter package to view directories and files in a foldable tree structure. This package allows you to display files and folders in a tree view, with the ability to customize the folder and file icons, text styles, and handle file taps.
